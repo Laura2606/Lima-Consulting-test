@@ -9,46 +9,46 @@ logger = logging.getLogger(__name__)
 
 def cleanse_article(raw_html: str) -> str:
     """
-    Extract clean article text from raw HTML.
+    Extrai o texto limpo do artigo a partir do HTML bruto.
 
     Steps:
-        1. readability-lxml strips navigation, ads, sidebars, footers
-        2. BeautifulSoup removes residual <script>, <style>, <figure>
-        3. Whitespace normalisation produces clean paragraph text
+        1. readability-lxml remove navegação, anúncios, barras laterais e rodapés
+        2. BeautifulSoup remove tags residuais como <script>, <style>, <figure>
+        3. A normalização de espaços em branco produz um texto limpo em parágrafos
 
     Args:
-        raw_html: Full HTML content of the article page.
+        raw_html: Conteúdo HTML completo da página do artigo.
 
     Returns:
-        Clean plain-text article body. Empty string if extraction fails.
+        Corpo do artigo em texto simples e limpo. Retorna string vazia se a extração falhar.
     """
     if not raw_html:
         return ""
 
     try:
-        # Step 1: Readability extracts the main content block
+        # Etapa 1: Readability extrai o bloco principal de conteúdo
         doc = Document(raw_html)
         content_html = doc.summary()
 
-        # Step 2: BeautifulSoup cleans residual markup
+        # Etapa 2: BeautifulSoup limpa marcações residuais
         soup = BeautifulSoup(content_html, "lxml")
 
-        # Remove elements that readability sometimes leaves behind
+        # Remove elementos que o readability às vezes deixa para trás
         for tag in soup.find_all(["script", "style", "figure", "figcaption", "aside"]):
             tag.decompose()
 
-        # Remove share buttons, related-article blocks, etc.
+        # Remove botões de compartilhamento, blocos de artigos relacionados etc.
         for attr_value in ["share", "related", "sidebar", "newsletter", "ad-slot"]:
             for el in soup.find_all(attrs={"class": re.compile(attr_value, re.I)}):
                 el.decompose()
             for el in soup.find_all(attrs={"id": re.compile(attr_value, re.I)}):
                 el.decompose()
 
-        # Step 3: Extract text and normalise whitespace
+        # Etapa 3: Extrai o texto e normaliza os espaços em branco
         text = soup.get_text(separator="\n")
-        # Collapse multiple blank lines into one
+        # Junta múltiplas linhas em branco em apenas uma separação
         text = re.sub(r"\n{3,}", "\n\n", text)
-        # Strip leading/trailing whitespace from each line
+        # Remove espaços em branco no início e no fim de cada linha
         lines = [line.strip() for line in text.splitlines()]
         text = "\n".join(lines).strip()
 
@@ -61,16 +61,16 @@ def cleanse_article(raw_html: str) -> str:
 
 def extract_summary(article_text: str, max_chars: int = 300) -> str:
     """
-    Extract a short summary snippet from the article text.
+    Extrai um pequeno resumo do texto do artigo.
 
-    Takes the first paragraph that is long enough to be meaningful.
+    Pega o primeiro parágrafo que seja longo o suficiente para ser significativo.
 
     Args:
-        article_text: Clean article text.
-        max_chars: Maximum characters for the snippet.
+        article_text: Texto limpo do artigo.
+        max_chars: Número máximo de caracteres do resumo.
 
     Returns:
-        A short text snippet suitable for search result previews.
+        Um pequeno trecho de texto adequado para prévias de resultados de busca.
     """
     if not article_text:
         return ""
