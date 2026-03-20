@@ -1,5 +1,6 @@
 """
-# Esta parte do projeto limpa os dados dos artigos e prepara para salvar no BigQuery
+# Esta parte do projeto limpa os dados dos artigos e prepara para salvar
+# no BigQuery
 
 Pipelines de itens do Scrapy.
 
@@ -25,18 +26,26 @@ logger = logging.getLogger(__name__)
 # Funções auxiliares
 # ──────────────────────────────────────────────
 
+
 def _load_config() -> dict:
     """Carrega o arquivo settings.yaml da pasta config."""
-    config_path = Path(__file__).resolve().parent.parent / "config" / "settings.yaml"
+    config_path = (
+        Path(__file__).resolve().parent.parent / "config" / "settings.yaml"
+    )
     if not config_path.exists():
-        logger.warning("Arquivo de configuração não encontrado em %s — usando padrões", config_path)
+        logger.warning(
+            "Arquivo de configuração não encontrado em %s — usando padrões",
+            config_path,
+        )
         return {}
     with open(config_path, "r") as f:
         return yaml.safe_load(f) or {}
 
+
 # ──────────────────────────────────────────────
 # Pipeline 1: Limpeza do conteúdo
 # ──────────────────────────────────────────────
+
 
 class CleansingPipeline:
     """
@@ -59,7 +68,8 @@ class CleansingPipeline:
 
         if not clean_text:
             logger.warning(
-                "Texto do artigo ficou vazio após a limpeza: %s", item.get("article_url")
+                "Texto do artigo ficou vazio após a limpeza: %s",
+                item.get("article_url"),
             )
 
         return item
@@ -69,12 +79,15 @@ class CleansingPipeline:
 # Pipeline 2: Armazenamento no BigQuery
 # ──────────────────────────────────────────────
 
+
 class BigQueryPipeline:
     """
     Salva os artigos limpos em uma tabela do BigQuery.
 
-    Usa inserções em streaming para disponibilizar os dados quase em tempo real.
-    Evita duplicidade usando a article_url para não salvar o mesmo artigo duas vezes.
+    Usa inserções em streaming para disponibilizar os dados quase em tempo
+    real.
+    Evita duplicidade usando a article_url para não salvar o mesmo artigo duas
+    vezes.
     """
 
     def __init__(self):
@@ -100,8 +113,10 @@ class BigQueryPipeline:
 
         # Faz a autenticação
         if creds_path:
-            credentials = service_account.Credentials.from_service_account_file(
-                creds_path
+            credentials = (
+                service_account.Credentials.from_service_account_file(
+                    creds_path
+                )
             )
             self.client = bigquery.Client(
                 project=project_id, credentials=credentials
@@ -111,7 +126,10 @@ class BigQueryPipeline:
             self.client = bigquery.Client(project=project_id)
 
         self.table_ref = f"{project_id}.{dataset}.{table}"
-        logger.info("Pipeline do BigQuery pronto — tabela de destino: %s", self.table_ref)
+        logger.info(
+            "Pipeline do BigQuery pronto — tabela de destino: %s",
+            self.table_ref,
+        )
 
     def process_item(self, item, spider):
         """Insere uma linha de artigo no BigQuery."""
@@ -138,7 +156,9 @@ class BigQueryPipeline:
 
         errors = self.client.insert_rows_json(self.table_ref, [row])
         if errors:
-            logger.error("Erro ao inserir no BigQuery para %s: %s", url, errors)
+            logger.error(
+                "Erro ao inserir no BigQuery para %s: %s", url, errors
+            )
         else:
             logger.info("Salvo no BigQuery: %s", item.get("headline", "")[:60])
 
@@ -148,6 +168,7 @@ class BigQueryPipeline:
         """Mostra um resumo quando o spider termina."""
         if self.client:
             logger.info(
-                "Pipeline do BigQuery finalizado — %d artigos únicos processados",
+                "Pipeline do BigQuery finalizado — %d artigos únicos"
+                "processados",
                 len(self._seen_urls),
             )

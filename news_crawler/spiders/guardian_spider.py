@@ -69,7 +69,8 @@ class GuardianSpider(scrapy.Spider):
                 self._pages_crawled += 1
                 yield scrapy.Request(url=url, callback=self.parse_article)
 
-        # Segue links de seções para ampliar a cobertura (um nível de profundidade)
+        # Segue links de seções para ampliar a cobertura (um nível de
+        # profundidade)
         section_links = response.css(
             'a[data-link-name="nav3 item"]::attr(href)'
         ).getall()
@@ -113,9 +114,11 @@ class GuardianSpider(scrapy.Spider):
         ).strip()
 
         # --- Seção ---
-        item["section"] = response.css(
-            'meta[property="article:section"]::attr(content)'
-        ).get("").strip()
+        item["section"] = (
+            response.css('meta[property="article:section"]::attr(content)')
+            .get("")
+            .strip()
+        )
 
         # --- URLs e metadados ---
         item["article_url"] = response.url
